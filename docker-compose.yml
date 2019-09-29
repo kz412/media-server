@@ -1,0 +1,184 @@
+version: '3'
+
+services:
+  sonarr:
+    image: linuxserver/sonarr
+    restart: always
+    container_name: sonarr
+    environment:
+      - PUID=1000
+      - PGID=1001
+      - TZ=$TIMEZONE
+    ports:
+      - "8989:8989"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./config/sonarr:/config
+      - /media/tv:/tv
+      - /media/downloads:/downloads
+  radarr:
+    image: linuxserver/radarr
+    restart: always
+    container_name: radarr
+    environment:
+      - PUID=1000
+      - PGID=1001
+    ports:
+      - "7878:7878"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./config/radarr:/config
+      - /media/movies:/movies
+      - /media/downloads:/downloads
+  lidarr:
+    image: linuxserver/lidarr
+    restart: always
+    container_name: lidarr
+    environment:
+      - PUID=1000
+      - PGID=1001
+      - TZ=$TIMEZONE
+    ports:
+      - "8686:8686"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./config/lidarr:/config
+      - /media/mussudic:/music
+      - /media/downloads:/downloads
+  emby:
+    image: emby/embyserver
+    restart: always
+    container_name: emby
+    environment:
+      - UID=1000
+      - GID=1001
+      - GIDLIST=91
+      - TZ=$TIMEZONE
+    ports:
+      - "8096:8096"
+      - "8920:8920"
+      - "7359:7359/udp"
+      - "1900:1900/udp"
+    volumes:
+      - ./config/emby:/config
+      - /media/music:/media/sound
+      - /media/movies:/media/movies
+      - /media/tv:/media/tv
+    devices:
+      - "/dev/dri/renderD128:/dev/dri/renderD128"
+  nzbget:
+    image: linuxserver/nzbget
+    restart: always
+    container_name: nzbget
+    environment: 
+      - PUID=1000
+      - PGID=1001
+      - TZ=$TIMEZONE
+    volumes: 
+      - ./config/nzbget:/config
+      - /media/downloads:/downloads
+    ports:
+      - 6789:6789
+  hydra2:
+    image: linuxserver/hydra2
+    restart: always
+    container_name: hydra2
+    environment:
+      - PUID=1000
+      - PGID=1001
+      - TZ=$TIMEZONE
+    volumes:
+      - ./config/hydra2:/config
+      - /media/downloads:/downloads
+    ports:
+      - 5076:5076
+  nginx-google-oauth:
+    image: cloudflare/nginx-google-oauth
+    restart: always
+    container_name: nginx-google-oauth
+    environment: 
+      NGO_CLIENT_ID: $NGO_CLIENT_ID
+      NGO_TOKEN_SECRET: $NGO_CLIENT_SECRET
+      NGO_TOKEN_SECRET: $NGO_TOKEN_SECRET
+      NGO_WHITELIST: $NGO_WHITELIST
+      NGO_SECURE_COOKIES: "true"
+      NGO_HTTP_ONLY_COOKIES: "true"
+      LOCATIONS: |
+        "location /sonarr/ {
+            proxy_pass http://sonarr:8989;
+            proxy_set_header    X-Real-IP  $$remote_addr;
+            proxy_set_header    Host            $$host;
+            proxy_set_header    X-Forwarded-For $$proxy_add_x_forwarded_for;
+            proxy_set_header    X-Forwarded-Proto $$scheme;
+            proxy_redirect      off;
+        }
+        
+        location /radarr/ {
+            proxy_pass http://radarr:7878;
+            proxy_set_header    X-Real-IP  $$remote_addr;
+            proxy_set_header    Host            $$host;
+            proxy_set_header    X-Forwarded-For $$proxy_add_x_forwarded_for;
+            proxy_set_header    X-Forwarded-Proto $$scheme;
+            proxy_redirect      off;
+        }
+
+        location /hydra/ {
+            proxy_pass http://hydra2:5076;
+            proxy_set_header    X-Real-IP  $$remote_addr;
+            proxy_set_header    Host            $$host;
+            proxy_set_header    X-Forwarded-For $$proxy_add_x_forwarded_for;
+            proxy_set_header    X-Forwarded-Proto $$scheme;
+            proxy_redirect      off;
+        }
+
+        location /emby/ {
+            proxy_pass http://emby:8096;
+            proxy_set_header    X-Real-IP  $$remote_addr;
+            proxy_set_header    Host            $$host;
+            proxy_set_header    X-Forwarded-For $$proxy_add_x_forwarded_for;
+            proxy_set_header    X-Forwarded-Proto $$scheme;
+            proxy_redirect      off;
+        }
+
+        location /nzbget/ {
+            proxy_pass http://nzbget:6789;
+            proxy_set_header    X-Real-IP  $$remote_addr;
+            proxy_set_header    Host            $$host;
+            proxy_set_header    X-Forwarded-For $$proxy_add_x_forwarded_for;
+            proxy_set_header    X-Forwarded-Proto $$scheme;
+            proxy_redirect      off;
+        }"
+    depends_on: 
+      - sonarr
+      - radarr
+      - lidarr
+  nginxssl:
+    image: valian/docker-nginx-auto-ssl
+    restart: on-failure
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./ssl_data:/etc/resty-auto-ssl
+    environment:
+      ALLOWED_DOMAINS: $PUBLIC_DOMAIN
+      SITES: '$PUBLIC_DOMAIN=openresty:80'
+    depends_on:
+      - nginx-google-oauth
+  transmission:
+    image: linuxserver/transmission
+    container_name: transmission
+    environment:
+      - PUID=1000
+      - PGID=1001
+      - TZ=$TIMEZONE
+    volumes:
+      - ./config/transmission:/config
+      - /media/tv:/media/tv
+      - /media/prvt:/media/prvt
+      - /media/movies:/media/movies
+    ports:
+      - 9091:9091
+      - 51413:51413
+      - 51413:51413/udp
+    restart: always
