@@ -1,3 +1,0 @@
-FROM openresty/openresty:centos
-
-
