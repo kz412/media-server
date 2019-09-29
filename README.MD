@@ -1,6 +1,6 @@
 # media-server
 
-Full fledged containerised media server, with
+Full fledged containerised public facing media server, with
 * Automatic SSL renewal via LetsEncrypt, using [docker-nginx-auto-ssl](https://github.com/Valian/docker-nginx-auto-ssl)
 * Google OAuth using [nginx-google-oauth](https://github.com/cloudflare/nginx-google-oauth)
 * [NzbGet](https://nzbget.net/) usenet client
