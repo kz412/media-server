@@ -12,7 +12,7 @@ services:
     ports:
       - "8989:8989"
     volumes:
-      # - /etc/localtime:/etc/localtime:ro
+      - /etc/localtime:/etc/localtime:ro
       - ./config/sonarr:/config
       - /media/tv:/tv
       - /media/downloads:/downloads
@@ -26,7 +26,7 @@ services:
     ports:
       - "7878:7878"
     volumes:
-      # - /etc/localtime:/etc/localtime:ro
+      - /etc/localtime:/etc/localtime:ro
       - ./config/radarr:/config
       - /media/movies:/movies
       - /media/downloads:/downloads
@@ -41,7 +41,7 @@ services:
     ports:
       - "8686:8686"
     volumes:
-      # - /etc/localtime:/etc/localtime:ro
+      - /etc/localtime:/etc/localtime:ro
       - ./config/lidarr:/config
       - /media/mussudic:/music
       - /media/downloads:/downloads
@@ -64,8 +64,8 @@ services:
       - /media/music:/media/sound
       - /media/movies:/media/movies
       - /media/tv:/media/tv
-    #devices:
-      # - "/dev/dri/renderD128:/dev/dri/renderD128"
+    devices:
+       - "/dev/dri/renderD128:/dev/dri/renderD128"
   nzbget:
     image: linuxserver/nzbget
     restart: always
